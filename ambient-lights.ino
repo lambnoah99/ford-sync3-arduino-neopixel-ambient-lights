@@ -30,7 +30,7 @@ Adafruit_NeoPixel pixels(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 uint8_t commandedColorIndex = 1;
 uint8_t commandedBrightness = 255;
 uint8_t actualColorIndex = 1;
-uint8_t actualBrightness = 1;
+uint8_t actualBrightness = 50;
 
 uint32_t colors[8] = {
   0,        // Black
@@ -54,6 +54,27 @@ void setup() {
   Serial.println("Connected to MCP2515");
 
   CAN.setMode(MCP_NORMAL); // Normal Mode so MCP2515 sends ACK Messages
+
+  // Startup Animation
+  pixels.clear();
+  delay(1000);
+  for(int i=0; i<NUM_PIXELS; ++i) {
+    pixels.setPixelColor(i, colors[actualColorIndex]);
+    pixels.show();
+
+    delay(TRANSITION_TIME);
+  }
+  for(int i=0; i<255; ++i) {
+    ++actualBrightness;
+    pixels.setBrightness(actualBrightness);
+    pixels.show();
+
+    delay(TRANSITION_TIME * 2);
+  }
+  
+
+
+  delay(2000);  
 }
 
 void loop() {
