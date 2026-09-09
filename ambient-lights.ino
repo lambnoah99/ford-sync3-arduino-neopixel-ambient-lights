@@ -53,6 +53,9 @@ void setup() {
   }
   Serial.println("Connected to MCP2515");
 
+  // Filter out unneeded CAN packets
+  mcp2515.setFilterMask(MCP2515::MASK0, false, 0x7FF);
+  mcp2515.setFilter(MCP2515::RXF0, false, 0x3DA);
   CAN.setMode(MCP_NORMAL); // Normal Mode so MCP2515 sends ACK Messages
 
   // Startup Animation
