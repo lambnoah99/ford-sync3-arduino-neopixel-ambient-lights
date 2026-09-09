@@ -2,6 +2,11 @@
 #include <mcp_can.h>
 #include <Adafruit_NeoPixel.h>
 
+#define LED_PIN 2
+#define NUM_PIXELS 11
+#define TRANSITION_TIME 2000 / NUM_PIXELS
+#define FADE_TIME_MS 20       // Time in ms between Dim steps, shouldn't be too long to prevent dropped packets 
+
 // CAN-IDs
 #define PLATFORM C1MCA
 
@@ -20,10 +25,27 @@ unsigned long canId;
 uint8_t len = 0;
 uint8_t buf[8];
 
+// Neopixel Connection
+Adafruit_NeoPixel pixels(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+uint8_t commandedColorIndex = 1;
+uint8_t commandedBrightness = 255;
+uint8_t actualColorIndex = 1;
+uint8_t actualBrightness = 1;
 
+uint32_t colors[8] = {
+  0,        // Black
+  65535,    // Ice Blue
+  13395456, // Orange
+  255,      // Blue
+  16711680, // Red
+  65535,    // Green
+  200,      // Navy
+  13369446  // Purple
+};
 
 void setup() {
   Serial.begin(9600);
+  pixels.begin();
 
   while (CAN.begin(MCP_ANY, CAN_500KBPS, MCP_8MHZ) != CAN_OK) {
     Serial.println("Couldn't connect to MCP, retrying...");
@@ -42,14 +64,30 @@ void loop() {
         case AMBI_REC_PID:
           commandedColorIndex = buf[0];
           commandedBrightness = buf[1];
-          Serial.print(commandedColorIndex);
-          Serial.print(", ");
-          Serial.println(commandedBrightness);
 
           send_light_state();
           break;
       }
     }
+
+  // Smooth Brightness Transition
+  if(commandedBrightness > actualBrightness) {
+    actualBrightness++;
+    delay(FADE_TIME_MS);
+    pixels.show();
+  } else if(commandedBrightness < actualBrightness) {
+    actualBrightness--;
+    delay(FADE_TIME_MS);
+    pixels.show();
+  }
+
+  // Only render color if it actually changed
+  if(commandedColorIndex != actualColorIndex) {
+    actualColorIndex = commandedColorIndex;
+    pixels.fill(colors[actualColorIndex], 0, NUM_PIXELS);
+    pixels.show();
+  }
+
 }
 
 // Sends Ambilight-State to APIM so it reflects in the ui
